@@ -11,11 +11,12 @@ async function main(HUB_PEER_ID: any, VALIDATOR_PEER_ID: any) {
     
     console.log("connected: ", Fluence.getStatus().peerId)
 
-    const res0 = await createSignature(HUB_PEER_ID, {sig: '0x', share: '', address: ''})
+    // thank shamir
+    const res0 = await createSignature(HUB_PEER_ID, {sig_version: 'ecdsa', share: '', address: ''})
     console.log(res0)
 
-    const res1 = await registerHyperNode(HUB_PEER_ID, Fluence.getStatus().peerId!)
-    console.log(res1)
+    // const res1 = await registerHyperNode(HUB_PEER_ID, VALIDATOR_PEER_ID)
+    // console.log(res1)
 }
 
-main('12D3KooWGzP3ELsqwo85LWc6N7zN56FvdLPUH6y1kbzAuWgpqgQx', '')
+main('12D3KooWEdR81bzioLHUJnNvUtdxHRCCw6qnfJ2iWkjpfmUgsWyG', '')

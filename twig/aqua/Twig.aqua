@@ -1,29 +1,32 @@
 import "@fluencelabs/aqua-lib/builtin.aqua"
 
+data Status: 
+    success: bool
+    error: string
+
 data SigShare:
-    sig: string
+    sig_version: string
     share: string
     address: string
 
 data SigReturn:
     sig_share: SigShare
-    error: string
-    success: bool
+    status: Status
 
 service Validator("leaf"):
     read(address: string) -> SigReturn
 
 service Twig("twig"):
-    register_hyper_node(peer_id: PeerId) -> bool
-    append_sig(sig: SigShare) -> bool
+    register_hyper_node(peer_id: PeerId) -> Status
+    append_sig(share_payload: SigShare) -> Status
     get_random_hyper_node(ttl: u64) -> PeerId
     
-func createSignature(hub_peer_id: PeerId, sig: SigShare) -> bool:
+func createSignature(hub_peer_id: PeerId, sig: SigShare) -> Status:
     on hub_peer_id:
         res <- Twig.append_sig(sig)
     <- res
 
-func registerHyperNode(hub_peer_id: PeerId, peer_id: PeerId) -> bool:
+func registerHyperNode(hub_peer_id: PeerId, peer_id: PeerId) -> Status:
     on hub_peer_id:
         res <- Twig.register_hyper_node(peer_id)
     <- res
@@ -47,11 +50,11 @@ func readSignature(relay_peer_id: PeerId, hyper_peer_id: PeerId, address: string
         return <- Validator.read(address)
 
     -- do a status check
-    if return.success:
+    if return.status.success:
         result <<- return.sig_share.share
         status <<- true
     else:
-        result <<- return.error
+        result <<- return.status.error
         status <<- false
 
     <- status!, result!

@@ -10,9 +10,11 @@
   "license": "ISC",
   "dependencies": {
     "corestore": "^6.4.3",
+    "ethers": "5.7.2",
     "hypercore": "^10.8.0",
     "hyperswarm": "^4.3.7",
     "multifeed": "^6.0.0",
-    "random-access-memory": "^6.1.0"
+    "random-access-memory": "^6.1.0",
+    "rxjs": "^7.8.0"
   }
 }
