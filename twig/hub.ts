@@ -27,6 +27,7 @@ async function main() {
     await shares.ready()
 
     console.log("connected: ",Fluence.getStatus().peerId)
+    console.log('hub peer', wallet.address)
 
     // Replicate the corestore
     const swarm = new Hyperswarm()
@@ -34,28 +35,9 @@ async function main() {
     swarm.join(shares.discoveryKey, { server: true, client: false })
 
     registerTwig({
-        register_hyper_node: async (string) => {
-            const fullStream = shares.createReadStream()
-            for await (const val of fullStream) {
-                if(ethers.utils.verifyMessage(val.sig.address, val.sig.sig) == wallet.address){
-                    console.log('checkouts')
-                }else {
-                    fooled = 1;
-                    return {
-                        error: "signatures are compromised", 
-                        success: false
-                    }
-                }
-            }
-
-            peers.append({peer_id: string})
-            console.log(peers.get(peers.length - 1))
-            return {
-                error: "n/a", 
-                success: true
-            }
-        },
         append_sig: async (share_payload: any) => {
+            console.log('are we fooled?')
+            console.log(fooled)
             if(!fooled){
                 console.log(share_payload)
                 const packedPayload = ethers.utils.solidityPack(["address", "string"], [wallet.address, share_payload.share]);
@@ -71,6 +53,7 @@ async function main() {
                         address: share_payload.address
                     }
                 )
+                
                 console.log(shares.get(shares.length - 1))
                 return {
                     error: "n/a", 
@@ -78,13 +61,38 @@ async function main() {
                 }
             } else {
                 return {
-                    error: "sorry server compromised", 
+                    error: "STATUS(1): server compromised", 
                     success: false
                 }
             }
         },
-        get_random_hyper_node: (ttl) => {
-            return peers.get(ttl % peers.length)
+        register_hyper_node: async (peer_id: any) => {
+            console.log(peer_id)
+            const fullStream = shares.createReadStream()
+            for await (const share of fullStream) {
+                if(ethers.utils.verifyMessage(ethers.utils.solidityPack(["address", "string"], [share.keeper_address, share.share]), share.sig) == wallet.address){
+                    console.log('checksout')
+                }else {
+                    fooled = 1;
+                    return {
+                        error: "signatures are compromised", 
+                        success: false
+                    }
+                }
+            }
+
+            peers.append({peer_id: peer_id})
+            console.log(await peers.get(peers.length - 1))
+            return {
+                error: "n/a", 
+                success: true
+            }
+        },
+        get_random_hyper_node: async (ttl) => {
+            console.log(ttl)
+            console.log(peers.length)
+            console.log(await peers.get(ttl % peers.length))
+            return (await peers.get(ttl % peers.length)).peer_id
         }
     })
 
@@ -105,10 +113,10 @@ async function main() {
         .createReadStream({live: true})
     )
     .subscribe(
-        (val: any) => {
-            console.log(val)
-            if(ethers.utils.verifyMessage(val.keeper_address, val.sig) == wallet.address){
-                console.log('checkouts')
+        (share: any) => {
+            console.log(share)
+            if(ethers.utils.verifyMessage(ethers.utils.solidityPack(["address", "string"], [share.keeper_address, share.share]), share.sig) == wallet.address){
+                console.log('checksout')
             }else {
                 fooled = 1;
             }

@@ -9,16 +9,16 @@ data SigShare:
     share: string
     address: string
 
-data SigReturn:
+data SigStatus:
     sig_share: SigShare
     status: Status
 
 service Validator("leaf"):
-    read(address: string) -> SigReturn
+    read(address: string) -> SigStatus
 
 service Twig("twig"):
-    register_hyper_node(peer_id: PeerId) -> Status
     append_sig(share_payload: SigShare) -> Status
+    register_hyper_node(peer_id: PeerId) -> Status
     get_random_hyper_node(ttl: u64) -> PeerId
     
 func createSignature(hub_peer_id: PeerId, sig: SigShare) -> Status:
@@ -31,7 +31,8 @@ func registerHyperNode(hub_peer_id: PeerId, peer_id: PeerId) -> Status:
         res <- Twig.register_hyper_node(peer_id)
     <- res
 
-func readSignature(relay_peer_id: PeerId, hyper_peer_id: PeerId, address: string) -> bool, string:
+-- func readSignature(relay_peer_id: PeerId, hyper_peer_id: PeerId, address: string) -> bool, string:
+func readSignature(relay_peer_id: PeerId, hyper_peer_id: PeerId, address: string) -> SigStatus:
     
     -- get a ttl for randomization
     on relay_peer_id:
@@ -44,17 +45,23 @@ func readSignature(relay_peer_id: PeerId, hyper_peer_id: PeerId, address: string
     -- set up streams
     result: *string
     status: *bool
+    
+    -- on random_node:
+    --     ret <- Validator.read(address)
+    -- <- ret
 
     -- read signature from random node using address
     on random_node:
         return <- Validator.read(address)
+    <- return
 
-    -- do a status check
-    if return.status.success:
-        result <<- return.sig_share.share
-        status <<- true
-    else:
-        result <<- return.status.error
-        status <<- false
 
-    <- status!, result!
+    -- -- do a status check
+    -- if ret.status.success:
+    --     result <<- ret.sig_share.share
+    --     status <<- true
+    -- else:
+    --     result <<- ret.status.error
+    --     status <<- false
+
+    -- <- status!, result!

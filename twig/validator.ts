@@ -1,12 +1,15 @@
 import { Fluence } from '@fluencelabs/fluence'
 import { krasnodar } from '@fluencelabs/fluence-network-environment'
 
+import {ethers} from 'ethers'
+
 import { registerValidator } from './generated/Twig'
 import { from } from 'rxjs';
 
 const Corestore = require("corestore")
 const Hyperswarm = require('hyperswarm')
 const ram = require('random-access-memory')
+let fooled = 0
 
 async function main() {
 
@@ -29,12 +32,37 @@ async function main() {
     swarm.join(shares.discoveryKey, { server: false, client: true })
 
     registerValidator({
-        read: (address) => {
+        read: async (address: string) => {
+            console.log('reading')
+            let share = ''
+
+            // run a validation check on the signatures
+            const readShares = shares.createReadStream()
+
+            for await (let share of readShares){
+                if(ethers.utils.verifyMessage(share.sig.address, share.sig.sig) == '0xbCDCC8D0DF0f459f034A7fbD0A6ce672AF0f0953'){
+                    console.log('checkouts')
+                    if(share.sig.address == address) share = share.sig.share
+                }else {
+                    fooled = 1;
+                    return {
+                        sig_share: { 
+                            sig_version: 'n/a',
+                            share: 'n/a',
+                            address: 'n/a'
+                        },
+                        status: {
+                            error: "STATUS(1): signature compromised", 
+                            success: false
+                        }
+                    }
+                }
+            }
             return { 
                 sig_share: { 
-                    sig_version: '',
-                    share: '',
-                    address: ''
+                    sig_version: 'ecdsa',
+                    share: share,
+                    address: address
                 },
                 status: {
                     error: "n/a", 

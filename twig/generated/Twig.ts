@@ -17,7 +17,7 @@ import {
 // Services
 
 export interface TwigDef {
-    append_sig: (sig: { address: string; share: string; sig_version: string; }, callParams: CallParams$$<'sig'>) => { error: string; success: boolean; } | Promise<{ error: string; success: boolean; }>;
+    append_sig: (share_payload: { address: string; share: string; sig_version: string; }, callParams: CallParams$$<'share_payload'>) => { error: string; success: boolean; } | Promise<{ error: string; success: boolean; }>;
     get_random_hyper_node: (ttl: number, callParams: CallParams$$<'ttl'>) => string | Promise<string>;
     register_hyper_node: (peer_id: string, callParams: CallParams$$<'peer_id'>) => { error: string; success: boolean; } | Promise<{ error: string; success: boolean; }>;
 }
@@ -40,7 +40,7 @@ export function registerTwig(...args: any) {
                 "domain" : {
                     "tag" : "labeledProduct",
                     "fields" : {
-                        "sig" : {
+                        "share_payload" : {
                             "tag" : "struct",
                             "name" : "SigShare",
                             "fields" : {
@@ -173,7 +173,7 @@ export function registerValidator(...args: any) {
                     "items" : [
                         {
                             "tag" : "struct",
-                            "name" : "SigReturn",
+                            "name" : "SigStatus",
                             "fields" : {
                                 "sig_share" : {
                                     "tag" : "struct",
@@ -220,7 +220,7 @@ export function registerValidator(...args: any) {
       
 // Functions
  
-export type ReadSignatureResult = [boolean, string]
+export type ReadSignatureResult = { sig_share: { address: string; share: string; sig_version: string; }; status: { error: string; success: boolean; }; }
 export function readSignature(
     relay_peer_id: string,
     hyper_peer_id: string,
@@ -257,121 +257,45 @@ export function readSignature(...args: any) {
                          (seq
                           (seq
                            (seq
-                            (seq
+                            (call -relay- ("op" "noop") [])
+                            (xor
+                             (call relay_peer_id ("peer" "timestamp_ms") [] ttl)
                              (seq
                               (seq
-                               (seq
-                                (seq
-                                 (call -relay- ("op" "noop") [])
-                                 (xor
-                                  (call relay_peer_id ("peer" "timestamp_ms") [] ttl)
-                                  (seq
-                                   (seq
-                                    (call -relay- ("op" "noop") [])
-                                    (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 1])
-                                   )
-                                   (call -relay- ("op" "noop") [])
-                                  )
-                                 )
-                                )
-                                (xor
-                                 (call hyper_peer_id ("twig" "get_random_hyper_node") [ttl] random_node)
-                                 (seq
-                                  (seq
-                                   (call -relay- ("op" "noop") [])
-                                   (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 2])
-                                  )
-                                  (call -relay- ("op" "noop") [])
-                                 )
-                                )
-                               )
-                               (xor
-                                (seq
-                                 (call random_node ("leaf" "read") [address] return)
-                                 (call -relay- ("op" "noop") [])
-                                )
-                                (seq
-                                 (call -relay- ("op" "noop") [])
-                                 (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 3])
-                                )
-                               )
+                               (call -relay- ("op" "noop") [])
+                               (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 1])
                               )
-                              (xor
-                               (match return.$.status.success! true
-                                (seq
-                                 (ap return.$.sig_share.share! $result)
-                                 (ap true $status)
-                                )
-                               )
-                               (seq
-                                (ap return.$.status.error! $result)
-                                (ap false $status)
-                               )
-                              )
-                             )
-                             (new $status_test
-                              (seq
-                               (seq
-                                (seq
-                                 (call %init_peer_id% ("math" "add") [0 1] status_incr)
-                                 (fold $status s
-                                  (seq
-                                   (seq
-                                    (ap s $status_test)
-                                    (canon %init_peer_id% $status_test  #status_iter_canon)
-                                   )
-                                   (xor
-                                    (match #status_iter_canon.length status_incr
-                                     (null)
-                                    )
-                                    (next s)
-                                   )
-                                  )
-                                  (never)
-                                 )
-                                )
-                                (canon %init_peer_id% $status_test  #status_result_canon)
-                               )
-                               (ap #status_result_canon status_gate)
-                              )
+                              (call -relay- ("op" "noop") [])
                              )
                             )
-                            (ap status_gate.$.[0]! status_gate-0)
                            )
-                           (new $result_test
+                           (xor
+                            (call hyper_peer_id ("twig" "get_random_hyper_node") [ttl] random_node)
                             (seq
                              (seq
-                              (seq
-                               (call %init_peer_id% ("math" "add") [0 1] result_incr)
-                               (fold $result s
-                                (seq
-                                 (seq
-                                  (ap s $result_test)
-                                  (canon %init_peer_id% $result_test  #result_iter_canon)
-                                 )
-                                 (xor
-                                  (match #result_iter_canon.length result_incr
-                                   (null)
-                                  )
-                                  (next s)
-                                 )
-                                )
-                                (never)
-                               )
-                              )
-                              (canon %init_peer_id% $result_test  #result_result_canon)
+                              (call -relay- ("op" "noop") [])
+                              (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 2])
                              )
-                             (ap #result_result_canon result_gate)
+                             (call -relay- ("op" "noop") [])
                             )
                            )
                           )
-                          (ap result_gate.$.[0]! result_gate-0)
+                          (xor
+                           (seq
+                            (call random_node ("leaf" "read") [address] ret)
+                            (call -relay- ("op" "noop") [])
+                           )
+                           (seq
+                            (call -relay- ("op" "noop") [])
+                            (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 3])
+                           )
+                          )
                          )
                         )
                        )
                       )
                       (xor
-                       (call %init_peer_id% ("callbackSrv" "response") [status_gate-0 result_gate-0])
+                       (call %init_peer_id% ("callbackSrv" "response") [ret])
                        (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 4])
                       )
                      )
@@ -405,12 +329,42 @@ export function readSignature(...args: any) {
             "tag" : "unlabeledProduct",
             "items" : [
                 {
-                    "tag" : "scalar",
-                    "name" : "bool"
-                },
-                {
-                    "tag" : "scalar",
-                    "name" : "string"
+                    "tag" : "struct",
+                    "name" : "SigStatus",
+                    "fields" : {
+                        "sig_share" : {
+                            "tag" : "struct",
+                            "name" : "SigShare",
+                            "fields" : {
+                                "address" : {
+                                    "tag" : "scalar",
+                                    "name" : "string"
+                                },
+                                "share" : {
+                                    "tag" : "scalar",
+                                    "name" : "string"
+                                },
+                                "sig_version" : {
+                                    "tag" : "scalar",
+                                    "name" : "string"
+                                }
+                            }
+                        },
+                        "status" : {
+                            "tag" : "struct",
+                            "name" : "Status",
+                            "fields" : {
+                                "error" : {
+                                    "tag" : "scalar",
+                                    "name" : "string"
+                                },
+                                "success" : {
+                                    "tag" : "scalar",
+                                    "name" : "bool"
+                                }
+                            }
+                        }
+                    }
                 }
             ]
         }
