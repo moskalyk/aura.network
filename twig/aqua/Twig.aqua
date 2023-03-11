@@ -34,13 +34,15 @@ func registerHyperNode(hub_peer_id: PeerId, peer_id: PeerId) -> Status:
 -- func readSignature(relay_peer_id: PeerId, hyper_peer_id: PeerId, address: string) -> bool, string:
 func readSignature(relay_peer_id: PeerId, hyper_peer_id: PeerId, address: string) -> SigStatus:
     
+    flume: *PeerId
+
     -- get a ttl for randomization
     on relay_peer_id:
         ttl <- Peer.timestamp_ms()
     
     -- get a random hyper node
     on hyper_peer_id:
-        random_node <- Twig.get_random_hyper_node(ttl)
+        flume <<- Twig.get_random_hyper_node(ttl)
 
     -- set up streams
     result: *string
@@ -51,7 +53,7 @@ func readSignature(relay_peer_id: PeerId, hyper_peer_id: PeerId, address: string
     -- <- ret
 
     -- read signature from random node using address
-    on random_node:
+    on flume[0]:
         return <- Validator.read(address)
     <- return
 

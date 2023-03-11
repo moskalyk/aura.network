@@ -252,42 +252,81 @@ export function readSignature(...args: any) {
                         )
                         (call %init_peer_id% ("getDataSrv" "address") [] address)
                        )
-                       (new $status
-                        (new $result
-                         (seq
+                       (new $flume
+                        (new $status
+                         (new $result
                           (seq
                            (seq
-                            (call -relay- ("op" "noop") [])
-                            (xor
-                             (call relay_peer_id ("peer" "timestamp_ms") [] ttl)
-                             (seq
-                              (seq
-                               (call -relay- ("op" "noop") [])
-                               (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 1])
-                              )
-                              (call -relay- ("op" "noop") [])
-                             )
-                            )
-                           )
-                           (xor
-                            (call hyper_peer_id ("twig" "get_random_hyper_node") [ttl] random_node)
                             (seq
                              (seq
-                              (call -relay- ("op" "noop") [])
-                              (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 2])
+                              (seq
+                               (seq
+                                (call -relay- ("op" "noop") [])
+                                (xor
+                                 (call relay_peer_id ("peer" "timestamp_ms") [] ttl)
+                                 (seq
+                                  (seq
+                                   (call -relay- ("op" "noop") [])
+                                   (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 1])
+                                  )
+                                  (call -relay- ("op" "noop") [])
+                                 )
+                                )
+                               )
+                               (xor
+                                (seq
+                                 (seq
+                                  (call hyper_peer_id ("twig" "get_random_hyper_node") [ttl] get_random_hyper_node)
+                                  (ap get_random_hyper_node $flume)
+                                 )
+                                 (call -relay- ("op" "noop") [])
+                                )
+                                (seq
+                                 (call -relay- ("op" "noop") [])
+                                 (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 2])
+                                )
+                               )
+                              )
+                              (new $flume_test
+                               (seq
+                                (seq
+                                 (seq
+                                  (call %init_peer_id% ("math" "add") [0 1] flume_incr)
+                                  (fold $flume s
+                                   (seq
+                                    (seq
+                                     (ap s $flume_test)
+                                     (canon %init_peer_id% $flume_test  #flume_iter_canon)
+                                    )
+                                    (xor
+                                     (match #flume_iter_canon.length flume_incr
+                                      (null)
+                                     )
+                                     (next s)
+                                    )
+                                   )
+                                   (never)
+                                  )
+                                 )
+                                 (canon %init_peer_id% $flume_test  #flume_result_canon)
+                                )
+                                (ap #flume_result_canon flume_gate)
+                               )
+                              )
                              )
+                             (ap flume_gate.$.[0]! flume_gate-0)
+                            )
+                            (call -relay- ("op" "noop") [])
+                           )
+                           (xor
+                            (seq
+                             (call flume_gate-0 ("leaf" "read") [address] return)
                              (call -relay- ("op" "noop") [])
                             )
-                           )
-                          )
-                          (xor
-                           (seq
-                            (call random_node ("leaf" "read") [address] ret)
-                            (call -relay- ("op" "noop") [])
-                           )
-                           (seq
-                            (call -relay- ("op" "noop") [])
-                            (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 3])
+                            (seq
+                             (call -relay- ("op" "noop") [])
+                             (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 3])
+                            )
                            )
                           )
                          )
@@ -295,7 +334,7 @@ export function readSignature(...args: any) {
                        )
                       )
                       (xor
-                       (call %init_peer_id% ("callbackSrv" "response") [ret])
+                       (call %init_peer_id% ("callbackSrv" "response") [return])
                        (call %init_peer_id% ("errorHandlingSrv" "error") [%last_error% 4])
                       )
                      )

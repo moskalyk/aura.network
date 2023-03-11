@@ -15,7 +15,7 @@ async function main(HUB_PEER_ID: any, VALIDATOR_PEER_ID: any) {
     const res0 = await createSignature(HUB_PEER_ID, {sig_version: 'ecdsa', share: 'joy', address: '0x'})
     console.log(res0)
 
-    const res1 = await registerHyperNode(HUB_PEER_ID, VALIDATOR_PEER_ID, {ttl: 10000})
+    const res1 = await registerHyperNode(HUB_PEER_ID, VALIDATOR_PEER_ID, {ttl: 14000})
     console.log(res1)
 
     const res2 = await readSignature(krasnodar[0].peerId, HUB_PEER_ID, '0x', {ttl: 13000})
@@ -28,4 +28,4 @@ async function main(HUB_PEER_ID: any, VALIDATOR_PEER_ID: any) {
     // }, 7000)
 }
 
-main('12D3KooWDywFZp9btB5ujqKii5TXB6ohhr5DJBxDYFaHRESCAhmX', '12D3KooWLk4qaqxDYBfB62tdZ6Bx1Fk5TcLcdTwzDeNmiShgWaZq')
+main('12D3KooWNAvGD1kQK5CVH23ixXW3hpbVXk3mWjLQ158gmfg8Eo5b', '12D3KooWFYAYjzLm22JCYWcRbvJFrZzNzUGZNxE5NsURYSMsqHqv')

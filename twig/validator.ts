@@ -40,6 +40,7 @@ async function main() {
             const readShares = shares.createReadStream()
 
             for await (let share of readShares){
+                console.log(share)
                 if(ethers.utils.verifyMessage(share.sig.address, share.sig.sig) == '0xbCDCC8D0DF0f459f034A7fbD0A6ce672AF0f0953'){
                     console.log('checkouts')
                     if(share.sig.address == address) share = share.sig.share
